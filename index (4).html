@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Prospect"/>
+<title>Prospect</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:#0C0C0F;overflow:hidden;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#fff;}
+::-webkit-scrollbar{display:none;}
+#app{height:100dvh;display:flex;flex-direction:column;max-width:430px;margin:0 auto;overflow:hidden;}
+/* ANIMATIONS */
+@keyframes pop{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes glow{0%,100%{box-shadow:0 0 14px #FF6B3580}50%{box-shadow:0 0 28px #FF6B3599}}
+@keyframes lvlup{0%{opacity:0;transform:translate(-50%,-50%) scale(0.5)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}80%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(0.9)}}
+@keyframes spark{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(0) translate(var(--tx),var(--ty))}}
+.btn{border:none;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s;}
+.btn:active{transform:scale(0.92);}
+.row{display:flex;align-items:flex-start;gap:12px;padding:13px 14px;margin-bottom:6px;border-radius:18px;background:#13131E;border:1px solid #1E1E2A;cursor:pointer;transition:background .15s,border .15s;-webkit-tap-highlight-color:transparent;}
+.row:active{background:#1a1a2a;}
+.row.done{background:#FF6B3514;border-color:#FF6B3540;}
+.check{flex-shrink:0;margin-top:2px;width:28px;height:28px;border-radius:50%;border:2.5px solid #2A2A3A;display:flex;align-items:center;justify-content:center;transition:all .2s;background:transparent;}
+.check.on{border-color:transparent;background:linear-gradient(135deg,#FF6B35,#FF9A5C);box-shadow:0 0 14px #FF6B3560;animation:pop .3s ease;}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header"></div>
+  <div id="tabs"></div>
+  <div class="scroll" id="content"></div>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+var PHASES=[
+  {id:0,lbl:"P1",title:"Boot Camp",dur:"Weeks 1-3",tag:"Hard reset. New patterns only.",
+   from:"#FF6B35",to:"#FF9A5C",rank:"Rookie",
+   vibe:"Shock your system. Uncomfortable on purpose. Every day you finish this you become a different person.",
+   goal:"Hit 80% for 21 straight days. Miss a day — restart the week.",
+   tasks:[
+    {e:"⏰",t:"Alarm across room. Up immediately.",n:"No snooze. Ever.",ai:0,xp:50},
+    {e:"🥶",t:"2-min cold shower",n:"Changes your brain chemistry in 30 days.",ai:0,xp:100},
+    {e:"💧",t:"1L water + black coffee",n:"Hydrate before caffeine.",ai:0,xp:30},
+    {e:"📊",t:"Pre-market scan — 30 min",n:"Futures, news, watchlist. One trade idea.",ai:0,xp:80},
+    {e:"🏋️",t:"Gym — Push/Pull/Legs 5x/week",n:"Mon Push · Tue Pull · Wed Legs · Thu Push · Fri Pull",ai:0,xp:150},
+    {e:"🥩",t:"40g+ protein breakfast",n:"Eggs, Greek yogurt, shake. Fuel not comfort.",ai:0,xp:40},
+    {e:"🤖",t:"AI Skill Block — 45 min",n:"Start at learnprompting.org — free.",ai:1,xp:120},
+    {e:"💼",t:"Career block — LinkedIn + resume",n:"Look like someone who has their life together.",ai:0,xp:80},
+    {e:"🥗",t:"Protein lunch — meal prepped",n:"Prep Sunday. Zero decision fatigue.",ai:0,xp:40},
+    {e:"🎯",t:"Build with Cursor or v0",n:"Ship something today. Trading app. Style app.",ai:1,xp:120},
+    {e:"🛹",t:"Outdoor activity — skate/walk",n:"Motion outside the gym is essential.",ai:0,xp:60},
+    {e:"🍽️",t:"Clean dinner",n:"Protein + veg. Weekday clean, weekend flex.",ai:0,xp:40},
+    {e:"🪞",t:"Full skincare routine",n:"Cleanser, moisturizer, SPF. Looksmaxxing 101.",ai:0,xp:50},
+    {e:"🌿",t:"Smoke ONLY after checklist done",n:"You earn it. Non-negotiable.",ai:0,xp:80},
+    {e:"📓",t:"Journal — 3 wins, 1 fix",n:"5 minutes. Short. Honest.",ai:0,xp:60},
+    {e:"🛏️",t:"Lights out by 11PM",n:"Sleep = testosterone, muscle, skin, brain.",ai:0,xp:70}
+  ]},
+  {id:1,lbl:"P2",title:"Brand Building",dur:"Weeks 4-8",tag:"Create something visible. Be someone.",
+   from:"#7C3AED",to:"#A855F7",rank:"Grinder",
+   vibe:"Cold shower is automatic. Build things people can see — your body, trading journal, AI projects.",
+   goal:"End with a visible physique change, 30+ trade logs, one AI project deployed.",
+   tasks:[
+    {e:"⏰",t:"6:30AM alarm — same cold shower",n:"Extra hour = yours to own.",ai:0,xp:60},
+    {e:"🧠",t:"20 min mindset — podcast or read",n:"Huberman, My First Million. No reels first.",ai:0,xp:70},
+    {e:"📊",t:"45-min pre-market deep dive",n:"Log every trade. Every single one.",ai:0,xp:100},
+    {e:"🏋️",t:"Gym — PHUL, progressive overload",n:"Track lifts. Add weight every week.",ai:0,xp:150},
+    {e:"🥩",t:"Breakfast + creatine + vit D + omega-3",n:"Most evidence-backed stack you can take.",ai:0,xp:50},
+    {e:"🤖",t:"AI Deep Dive — 1 hour",n:"Build a real mini app with Cursor this week.",ai:1,xp:130},
+    {e:"💼",t:"3 internship apps this week",n:"Message people on LinkedIn. Be proactive.",ai:0,xp:100},
+    {e:"📈",t:"Market hours — active monitoring",n:"Study price action live.",ai:0,xp:90},
+    {e:"🥗",t:"Meal prepped lunch — 45g+ protein",n:"You prepped it. Eat it.",ai:0,xp:40},
+    {e:"🎨",t:"Personal brand — post fits + AI projects",n:"Start a trading journal on X or Substack.",ai:0,xp:80},
+    {e:"🏄",t:"Active hobby — skate/swim/sport",n:"Stay athletic between seasons.",ai:0,xp:60},
+    {e:"🍽️",t:"Dinner + macro check",n:"Loosely track protein.",ai:0,xp:40},
+    {e:"🪞",t:"Full grooming — hair, nails, brows",n:"Model look is 70% maintenance.",ai:0,xp:60},
+    {e:"🌿",t:"Earned smoke — tasks done first",n:"Weekday: tasks first, always.",ai:0,xp:80},
+    {e:"📓",t:"Journal + tomorrow scheduled",n:"Wake up with direction not questions.",ai:0,xp:70},
+    {e:"🛏️",t:"Lights out 11PM",n:"Non-negotiable.",ai:0,xp:70}
+  ]},
+  {id:2,lbl:"P3",title:"Prospect Mode",dur:"Month 3-4",tag:"You're executing a life now.",
+   from:"#059669",to:"#10B981",rank:"Prospect",
+   vibe:"Everything is compounding. Body different. AI skills real. You're walking differently. People notice.",
+   goal:"Land an internship. Deploy an AI project. Be someone you'd be impressed by.",
+   tasks:[
+    {e:"🌄",t:"6AM wake — natural or alarm",n:"Circadian rhythm is locked in.",ai:0,xp:70},
+    {e:"🥶",t:"Cold shower + full hygiene",n:"Anchor habit. Separates you from old you.",ai:0,xp:100},
+    {e:"🧠",t:"30 min AI news + industry research",n:"Import AI, The Rundown AI, Lenny's Newsletter.",ai:1,xp:80},
+    {e:"📊",t:"1-hour pre-market deep dive",n:"Full trade plan before market opens.",ai:0,xp:120},
+    {e:"🏋️",t:"Gym — periodized, tracking PRs",n:"Hitting personal records. Body is changing.",ai:0,xp:150},
+    {e:"🥩",t:"Performance breakfast",n:"Protein, fats, complex carbs.",ai:0,xp:50},
+    {e:"🤖",t:"AI Project Work — 90 min",n:"Build: trading bot, style app, or RAG tool.",ai:1,xp:150},
+    {e:"💼",t:"Career output — producing not just learning",n:"Internship, freelance, building.",ai:0,xp:110},
+    {e:"📈",t:"Market session — your system",n:"Entries, exits, stops. Business mode.",ai:0,xp:100},
+    {e:"🎯",t:"Deep work — phone DND, 2hrs",n:"Most important project. No distractions.",ai:0,xp:120},
+    {e:"🏄",t:"Outdoor — skate, surf sim, hike",n:"Lifestyle not just a gym body.",ai:0,xp:70},
+    {e:"🍽️",t:"Dinner — social or intentional",n:"Networking happens over food.",ai:0,xp:50},
+    {e:"👔",t:"Wardrobe — one quality piece/month",n:"Intentional not impulsive.",ai:0,xp:60},
+    {e:"🌿",t:"Wind down — earned and complete",n:"You ran a full day. Enjoy it.",ai:0,xp:80},
+    {e:"📓",t:"Journal — progress, goals, vision",n:"Write where you were in Phase 1.",ai:0,xp:80},
+    {e:"🛏️",t:"Sleep by 10:30PM",n:"Wake at 6 feeling like a different species.",ai:0,xp:80}
+  ]},
+  {id:3,lbl:"P4",title:"The Version",dur:"Month 5+",tag:"This is just who you are now.",
+   from:"#DB2777",to:"#EC4899",rank:"Elite",
+   vibe:"Not following a schedule. Living a life. You're 20 and already the guy most people wish they'd been at 25.",
+   goal:"You don't need a goal list. You ARE the goal. Set new ones.",
+   tasks:[
+    {e:"🌄",t:"5:30AM natural wake",n:"It happens. You'll be surprised.",ai:0,xp:80},
+    {e:"🥶",t:"Cold shower — automatic, no dread",n:"Don't even think about it anymore.",ai:0,xp:100},
+    {e:"🧠",t:"30 min deep reading + AI research",n:"Books, whitepapers, industry moves.",ai:1,xp:90},
+    {e:"📊",t:"Pre-market — real system, real edge",n:"Risk management, position sizing.",ai:0,xp:130},
+    {e:"🏋️",t:"Gym — body worth talking about",n:"People ask what you do. Real answer.",ai:0,xp:150},
+    {e:"🥩",t:"Performance nutrition — fully dialed",n:"You know exactly what works.",ai:0,xp:60},
+    {e:"🤖",t:"AI work — production level",n:"Shipping tools people actually use.",ai:1,xp:160},
+    {e:"💼",t:"Professional work — real track record",n:"Employers see it. The work is real.",ai:0,xp:130},
+    {e:"📈",t:"Trading — real capital, real system",n:"Consistent execution. You put in the reps.",ai:0,xp:120},
+    {e:"🎯",t:"Deep work — most ambitious project",n:"At 20 you build what others don't by 30.",ai:0,xp:140},
+    {e:"🏄",t:"Lifestyle — surf, snowboard, sport",n:"Booking trips. Actually living it.",ai:0,xp:80},
+    {e:"🍽️",t:"Dinner — earned, social",n:"You belong in those rooms now.",ai:0,xp:60},
+    {e:"🌿",t:"Completely earned chill",n:"Smoke, music. You ran a full day.",ai:0,xp:80},
+    {e:"🛏️",t:"Sleep by 10PM",n:"The version. Protect it.",ai:0,xp:90}
+  ]}
+];
+
+var AI_SKILLS=[
+  {icon:"🤖",name:"Cursor AI",cat:"Vibe Coding",col:"#FF6B35",desc:"Build apps by talking to AI.",why:"Employers want people who ship with AI not just code from scratch."},
+  {icon:"⚡",name:"v0 by Vercel",cat:"Vibe Coding",col:"#FF6B35",desc:"Type UI ideas, get working React instantly.",why:"PMs who can vibe-code prototypes are gold."},
+  {icon:"🐙",name:"GitHub Copilot",cat:"Vibe Coding",col:"#FF6B35",desc:"Real-time AI code autocomplete.",why:"Not using Copilot in 2025 is like not using Google in 2010."},
+  {icon:"💬",name:"Prompt Engineering",cat:"AI Fundamentals",col:"#7C3AED",desc:"Talk to Claude, GPT-4, Gemini with precision.",why:"Getting 10x more from AI tools than coworkers = invaluable."},
+  {icon:"🧬",name:"LLM Basics",cat:"AI Fundamentals",col:"#7C3AED",desc:"Tokens, context windows, temperature.",why:"Know how they work to use them strategically."},
+  {icon:"🔗",name:"RAG Systems",cat:"AI Fundamentals",col:"#7C3AED",desc:"How AI pulls from real data sources.",why:"Every company building internal AI tools. RAG = immediate value."},
+  {icon:"📡",name:"AI APIs",cat:"AI Fundamentals",col:"#7C3AED",desc:"Call Anthropic/OpenAI APIs, build tools.",why:"Build a trading signal analyzer as a portfolio project."},
+  {icon:"📊",name:"AI Trading Tools",cat:"AI + Finance",col:"#059669",desc:"Composer, Danelfin, Trade Ideas.",why:"Combine trading with AI — massive edge over manual traders."},
+  {icon:"🐍",name:"Python for Finance",cat:"AI + Finance",col:"#059669",desc:"Pandas to analyze and backtest strategies.",why:"Basic Python + AI automates your entire watchlist."},
+  {icon:"📰",name:"Sentiment Analysis",cat:"AI + Finance",col:"#059669",desc:"AI reads news for stock signals.",why:"Hedge funds pay millions for this. Learn free on YouTube."},
+  {icon:"🎨",name:"Midjourney",cat:"AI Creative",col:"#DB2777",desc:"Fashion moodboards, aesthetic references.",why:"Personal brand, style research, any creative role."},
+  {icon:"🎬",name:"RunwayML",cat:"AI Creative",col:"#DB2777",desc:"AI video generation — next frontier.",why:"Creators who direct AI video will dominate content."},
+  {icon:"🕹️",name:"AI Agents",cat:"Future Skills",col:"#0EA5E9",desc:"Autonomous AI that acts and browses.",why:"Agentic AI is where the entire industry is heading."},
+  {icon:"🗄️",name:"Vector Databases",cat:"Future Skills",col:"#0EA5E9",desc:"Pinecone — how AI stores memory.",why:"Every AI product uses them. This separates you."},
+  {icon:"⚙️",name:"Fine-tuning",cat:"Future Skills",col:"#0EA5E9",desc:"Train a model on specific data.",why:"Companies want people who customize AI for their use case."}
+];
+
+// ─── STORAGE ─────────────────────────────────────────────────────────────────
+function load(){try{return JSON.parse(localStorage.getItem('chudd')||'{}')}catch(e){return{}}}
+function save(d){try{localStorage.setItem('chudd',JSON.stringify(d))}catch(e){}}
+
+// ─── TIME ─────────────────────────────────────────────────────────────────────
+function msLeft(){var n=new Date(),m=new Date(n);m.setHours(24,0,0,0);return m-n;}
+function today(){return new Date().toISOString().slice(0,10);}
+function fmt(ms){
+  if(ms<=0)return'00:00:00';
+  var h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000),s=Math.floor((ms%60000)/1000);
+  return(h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+}
+function dayLbl(dk){
+  var t=today(),yd=new Date();yd.setDate(yd.getDate()-1);
+  if(dk===t)return'Today';
+  if(dk===yd.toISOString().slice(0,10))return'Yesterday';
+  return new Date(dk+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+var S={
+  ph:0, tab:'today', histPh:0,
+  store:load(),
+  ms:msLeft(),
+  openSkill:null
+};
+function get(key){return S.store[key]||0;}
+function getObj(key){return S.store[key]||{};}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render(){
+  var p=PHASES[S.ph];
+  var td=today();
+  var checked=getObj('c'+S.ph+'_'+td);
+  var streak=get('s'+S.ph);
+  var xp=get('x'+S.ph);
+  var done=p.tasks.filter(function(_,i){return !!checked[i];});
+  var dxp=done.reduce(function(a,t){return a+t.xp;},0);
+  var pct=Math.round(done.length/p.tasks.length*100);
+  var lv=Math.floor(xp/1000)+1;
+  var lxp=xp%1000;
+  var lpct=(lxp/1000)*100;
+  var uc=S.ms<3600000?'#FF4444':S.ms<10800000?'#FACC15':p.from;
+
+  // HEADER
+  document.getElementById('header').innerHTML=
+    '<div style="background:linear-gradient(160deg,'+p.from+'28,'+p.to+'10 55%,#0C0C0F);padding:52px 16px 14px;border-bottom:1px solid #1A1A28;">'+
+      // Phase pills
+      '<div style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;">'+
+        PHASES.map(function(ph2,i){
+          var act=S.ph===i;
+          return '<button class="btn" onclick="switchPhase('+i+')" style="flex-shrink:0;padding:6px 14px;border-radius:100px;background:'+(act?'linear-gradient(135deg,'+ph2.from+','+ph2.to+')':'#1C1C26')+';color:'+(act?'#fff':'#444')+';font-size:11px;font-weight:800;letter-spacing:.06em;">'+ph2.lbl+'</button>';
+        }).join('')+
+      '</div>'+
+      // Title + streak
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;">'+
+        '<div style="flex:1;">'+
+          '<div style="font-size:9px;letter-spacing:.4em;color:#333;margin-bottom:2px;">PROSPECT · AGE 20</div>'+
+          '<div style="font-size:24px;font-weight:800;line-height:1.1;letter-spacing:-.02em;">'+p.title+'</div>'+
+          '<div style="font-size:11px;color:#555;margin-top:2px;font-style:italic;">'+p.tag+'</div>'+
+        '</div>'+
+        '<div style="flex-shrink:0;text-align:center;background:#14141E;border-radius:14px;padding:8px 12px;border:1px solid '+(streak>0?p.from+'55':'#1E1E28')+';'+(streak>2?'animation:glow 2s ease-in-out infinite;':'')+'">' +
+          '<div style="font-size:20px;">🔥</div>'+
+          '<div style="font-size:18px;font-weight:800;color:'+(streak>0?p.from:'#333')+';line-height:1;">'+streak+'</div>'+
+          '<div style="font-size:8px;color:#333;letter-spacing:.15em;margin-top:1px;">STREAK</div>'+
+        '</div>'+
+      '</div>'+
+      // Timer + today %
+      '<div style="display:flex;gap:8px;margin-bottom:10px;">'+
+        '<div style="flex:1;padding:10px 12px;background:#13131E;border-radius:12px;border:1px solid '+uc+'35;">'+
+          '<div style="font-size:8px;color:#333;letter-spacing:.2em;margin-bottom:2px;">RESETS IN</div>'+
+          '<div style="font-size:20px;font-weight:800;color:'+uc+';letter-spacing:.04em;'+(S.ms<3600000?'animation:blink 1s ease-in-out infinite;':'')+'">'+ fmt(S.ms)+'</div>'+
+        '</div>'+
+        '<div style="flex:1;padding:10px 12px;background:#13131E;border-radius:12px;border:1px solid '+p.from+'25;text-align:right;">'+
+          '<div style="font-size:8px;color:#333;letter-spacing:.2em;margin-bottom:2px;">TODAY</div>'+
+          '<div style="font-size:20px;font-weight:800;color:'+(pct===100?'#4ADE80':p.from)+';">'+pct+'%</div>'+
+          '<div style="font-size:10px;color:#333;">'+done.length+'/'+p.tasks.length+' done</div>'+
+        '</div>'+
+      '</div>'+
+      // XP bar
+      '<div>'+
+        '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">'+
+          '<span style="font-size:10px;color:#333;letter-spacing:.1em;">LVL '+lv+' · '+p.rank.toUpperCase()+'</span>'+
+          '<span style="font-size:10px;color:'+p.from+';font-weight:700;">'+lxp+'/1000 XP · +'+dxp+' today</span>'+
+        '</div>'+
+        '<div style="height:5px;background:#1C1C26;border-radius:10px;overflow:hidden;">'+
+          '<div style="height:100%;width:'+lpct+'%;background:linear-gradient(90deg,'+p.from+','+p.to+');border-radius:10px;transition:width .5s ease;box-shadow:0 0 10px '+p.from+'60;"></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+
+  // TABS
+  var tabs=[['today','📅 Today'],['history','📆 History'],['ai','🤖 AI'],['stats','📈 Stats']];
+  document.getElementById('tabs').innerHTML=
+    '<div style="display:flex;border-bottom:1px solid #1A1A28;background:#0C0C0F;">'+
+      tabs.map(function(pair){
+        var act=S.tab===pair[0];
+        return '<button class="btn" onclick="switchTab(\''+pair[0]+'\')" style="flex:1;padding:11px 4px;background:none;border:none;border-bottom:'+(act?'2px solid '+p.from:'2px solid transparent')+';color:'+(act?p.from:'#2E2E3E')+';font-size:10px;font-weight:800;letter-spacing:.05em;">'+pair[1]+'</button>';
+      }).join('')+
+    '</div>';
+
+  // CONTENT
+  var html='';
+
+  if(S.tab==='today'){
+    html+='<div style="padding:10px 14px 80px;">';
+    p.tasks.forEach(function(task,i){
+      var dn=!!checked[i];
+      html+=
+        '<div class="row'+(dn?' done':'')+'" onclick="toggleTask('+i+')" style="'+(dn?'background:'+p.from+'14;border-color:'+p.from+'40;':'')+'">'+
+          '<div class="check'+(dn?' on':'')+'" style="'+(dn?'background:linear-gradient(135deg,'+p.from+','+p.to+');border-color:transparent;box-shadow:0 0 14px '+p.from+'60;':'')+'">'+
+            (dn?'<span style="font-size:13px;color:#fff;font-weight:900;">✓</span>':'')+
+          '</div>'+
+          '<div style="flex:1;min-width:0;">'+
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">'+
+              '<span style="font-size:17px;">'+task.e+'</span>'+
+              (task.ai?'<span style="font-size:8px;background:'+p.from+'28;color:'+p.from+';padding:2px 7px;border-radius:100px;font-weight:800;letter-spacing:.12em;">AI</span>':'')+
+              '<span style="font-size:10px;color:'+(dn?p.from:'#2A2A3A')+';font-weight:700;margin-left:auto;">+'+task.xp+'XP</span>'+
+            '</div>'+
+            '<div style="font-size:13px;font-weight:700;color:'+(dn?'#3A3A4A':'#DEDEE8')+';text-decoration:'+(dn?'line-through':'none')+';line-height:1.35;">'+task.t+'</div>'+
+            '<div style="font-size:11px;color:#2A2A38;margin-top:3px;line-height:1.45;">'+task.n+'</div>'+
+          '</div>'+
+        '</div>';
+    });
+    html+=
+      '<div style="margin-top:6px;padding:16px;border-radius:18px;background:linear-gradient(135deg,'+p.from+'14,'+p.to+'06);border:1px solid '+p.from+'22;">'+
+        '<div style="font-size:9px;color:'+p.from+';font-weight:800;letter-spacing:.25em;margin-bottom:7px;">THE MINDSET</div>'+
+        '<div style="font-size:12px;color:#444;line-height:1.7;">'+p.vibe+'</div>'+
+        '<div style="margin-top:12px;padding-top:12px;border-top:1px solid '+p.from+'18;">'+
+          '<div style="font-size:9px;color:'+p.from+';font-weight:800;letter-spacing:.25em;margin-bottom:6px;">PHASE GOAL</div>'+
+          '<div style="font-size:12px;color:#444;line-height:1.6;">'+p.goal+'</div>'+
+        '</div>'+
+      '</div>';
+    html+='</div>';
+  }
+
+  else if(S.tab==='history'){
+    html+='<div style="padding:14px 14px 80px;">';
+    html+=
+      '<div style="margin-bottom:14px;">'+
+        '<div style="font-size:20px;font-weight:800;margin-bottom:3px;">Daily <span style="color:'+p.from+';">History</span></div>'+
+        '<div style="font-size:12px;color:#333;">Every day tracked. Every day counts.</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;">'+
+        PHASES.map(function(ph2,i){
+          var act=S.histPh===i;
+          return '<button class="btn" onclick="switchHistPh('+i+')" style="flex-shrink:0;padding:5px 12px;border-radius:100px;background:'+(act?'linear-gradient(135deg,'+ph2.from+','+ph2.to+')':'#1C1C26')+';color:'+(act?'#fff':'#444')+';font-size:10px;font-weight:800;">'+ph2.lbl+'</button>';
+        }).join('')+
+      '</div>';
+
+    var hp=PHASES[S.histPh];
+    var hist=[];
+    for(var i=0;i<30;i++){
+      var d=new Date();d.setDate(d.getDate()-i);
+      var dk=d.toISOString().slice(0,10);
+      var c=getObj('c'+S.histPh+'_'+dk);
+      var ct=Object.values(c).filter(Boolean).length;
+      if(ct>0||dk===td) hist.push({date:dk,done:ct,total:hp.tasks.length,pct:Math.round(ct/hp.tasks.length*100),checked:c});
+    }
+
+    if(hist.length===0){
+      html+='<div style="text-align:center;padding:40px 20px;"><div style="font-size:44px;margin-bottom:12px;">📭</div><div style="font-size:14px;font-weight:700;color:#444;">No history yet</div><div style="font-size:12px;color:#2A2A3A;margin-top:4px;">Start checking off tasks!</div></div>';
+    } else {
+      hist.forEach(function(day){
+        var isToday=day.date===td;
+        var perfect=day.pct===100;
+        html+=
+          '<div style="background:#13131E;border-radius:16px;padding:14px 16px;margin-bottom:10px;border:1px solid '+(perfect?hp.from+'60':isToday?hp.from+'30':'#1E1E2A')+';">'+
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'+
+              '<div>'+
+                '<div style="font-size:14px;font-weight:800;color:'+(isToday?hp.from:'#DDD')+';">'+dayLbl(day.date)+'</div>'+
+                '<div style="font-size:10px;color:#2A2A3A;margin-top:1px;">'+day.date+'</div>'+
+              '</div>'+
+              '<div style="display:flex;align-items:center;gap:8px;">'+
+                (perfect?'<span style="font-size:18px;">🏆</span>':'')+
+                '<div style="text-align:right;">'+
+                  '<div style="font-size:20px;font-weight:800;color:'+(perfect?'#4ADE80':hp.from)+';line-height:1;">'+day.pct+'%</div>'+
+                  '<div style="font-size:10px;color:#2A2A3A;">'+day.done+'/'+day.total+'</div>'+
+                '</div>'+
+              '</div>'+
+            '</div>'+
+            '<div style="height:4px;background:#1C1C26;border-radius:10px;margin-bottom:10px;">'+
+              '<div style="height:100%;width:'+day.pct+'%;background:'+(perfect?'linear-gradient(90deg,#4ADE80,#22C55E)':'linear-gradient(90deg,'+hp.from+','+hp.to+')')+';border-radius:10px;"></div>'+
+            '</div>'+
+            '<div style="display:flex;flex-wrap:wrap;gap:5px;">'+
+              hp.tasks.map(function(task,ti){
+                return '<div style="width:30px;height:30px;border-radius:8px;background:'+(day.checked[ti]?'linear-gradient(135deg,'+hp.from+'40,'+hp.to+'40)':'#0C0C0F')+';display:flex;align-items:center;justify-content:center;font-size:14px;border:1px solid '+(day.checked[ti]?hp.from+'50':'#1C1C26')+';opacity:'+(day.checked[ti]?1:0.3)+';">'+task.e+'</div>';
+              }).join('')+
+            '</div>'+
+          '</div>';
+      });
+    }
+    html+='</div>';
+  }
+
+  else if(S.tab==='ai'){
+    html+='<div style="padding:16px 14px 80px;">';
+    html+=
+      '<div style="margin-bottom:20px;">'+
+        '<div style="font-size:22px;font-weight:800;line-height:1.2;">AI Skills That<br><span style="color:'+p.from+';">Get You Hired</span></div>'+
+        '<div style="font-size:12px;color:#333;margin-top:4px;">Learn these. Build. Put them on your resume.</div>'+
+      '</div>';
+    var cats=[];
+    AI_SKILLS.forEach(function(s){if(cats.indexOf(s.cat)<0)cats.push(s.cat);});
+    cats.forEach(function(cat){
+      var cs=AI_SKILLS.filter(function(s){return s.cat===cat;});
+      var cc=cs[0].col;
+      html+='<div style="margin-bottom:22px;"><div style="font-size:11px;font-weight:800;color:'+cc+';letter-spacing:.1em;margin-bottom:8px;">'+cat.toUpperCase()+'</div>';
+      cs.forEach(function(sk,si){
+        var key=cat+si;
+        var open=S.openSkill===key;
+        html+=
+          '<div class="btn" onclick="toggleSkill(\''+key+'\')" style="background:#13131E;border-radius:14px;padding:13px 14px;margin-bottom:7px;border:1px solid '+(open?cc+'45':'#1E1E2A')+';'+(open?'box-shadow:0 4px 20px '+cc+'18;':'')+';display:block;width:100%;text-align:left;">'+
+            '<div style="display:flex;align-items:center;gap:10px;">'+
+              '<div style="width:38px;height:38px;border-radius:11px;background:'+cc+'22;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;">'+sk.icon+'</div>'+
+              '<div style="flex:1;">'+
+                '<div style="font-size:13px;font-weight:700;color:#DEDEE8;">'+sk.name+'</div>'+
+                '<div style="font-size:11px;color:#333;">'+sk.desc+'</div>'+
+              '</div>'+
+              '<div style="color:#2A2A3A;font-size:18px;transform:'+(open?'rotate(180deg)':'none')+';transition:transform .2s;">⌄</div>'+
+            '</div>'+
+            (open?
+              '<div style="margin-top:12px;padding:10px 12px;background:'+cc+'12;border-radius:10px;border-left:3px solid '+cc+';">'+
+                '<div style="font-size:9px;color:'+cc+';font-weight:800;letter-spacing:.2em;margin-bottom:4px;">WHY IT MATTERS</div>'+
+                '<div style="font-size:12px;color:#555;line-height:1.6;">'+sk.why+'</div>'+
+              '</div>':'')+
+          '</div>';
+      });
+      html+='</div>';
+    });
+    html+=
+      '<div style="padding:16px;border-radius:16px;background:linear-gradient(135deg,'+p.from+'14,'+p.to+'06);border:1px solid '+p.from+'22;margin-bottom:8px;">'+
+        '<div style="font-size:12px;font-weight:800;color:'+p.from+';margin-bottom:12px;">🔗 Start Here — All Free</div>'+
+        [['learnprompting.org','Free prompt engineering'],['cursor.com','Start vibe coding today'],['Andrej Karpathy (YouTube)','How AI actually works'],['The Rundown AI','Daily AI news, 5 min'],['freeCodeCamp AI path','Beginner friendly, free']].map(function(pair){
+          return '<div style="display:flex;gap:10px;margin-bottom:9px;align-items:flex-start;"><div style="width:5px;height:5px;border-radius:50%;background:'+p.from+';margin-top:6px;flex-shrink:0;"></div><div><div style="font-size:12px;font-weight:700;color:#DDD;">'+pair[0]+'</div><div style="font-size:11px;color:#333;">'+pair[1]+'</div></div></div>';
+        }).join('')+
+      '</div>';
+    html+='</div>';
+  }
+
+  else if(S.tab==='stats'){
+    html+='<div style="padding:16px 14px 80px;">';
+    html+='<div style="font-size:22px;font-weight:800;margin-bottom:18px;">Your <span style="color:'+p.from+';">Stats</span></div>';
+    PHASES.forEach(function(ph2,i){
+      var px=get('x'+i),pl=Math.floor(px/1000)+1,ps=get('s'+i),pp=((px%1000)/1000)*100;
+      var hist2=[];
+      for(var d=0;d<30;d++){var dt=new Date();dt.setDate(dt.getDate()-d);var dk=dt.toISOString().slice(0,10);var c=getObj('c'+i+'_'+dk);var ct=Object.values(c).filter(Boolean).length;if(ct>0)hist2.push(ct);}
+      var perfect2=0;
+      for(var d2=0;d2<30;d2++){var dt2=new Date();dt2.setDate(dt2.getDate()-d2);var dk2=dt2.toISOString().slice(0,10);var c2=getObj('c'+i+'_'+dk2);if(Object.values(c2).filter(Boolean).length===ph2.tasks.length)perfect2++;}
+      html+=
+        '<div style="background:#13131E;border-radius:18px;padding:16px;margin-bottom:12px;border:1px solid '+(i===S.ph?ph2.from+'45':'#1E1E2A')+';">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'+
+            '<div><div style="font-size:15px;font-weight:800;">'+ph2.title+'</div><div style="font-size:11px;color:#333;">'+ph2.dur+'</div></div>'+
+            '<div style="text-align:right;"><div style="font-size:22px;font-weight:800;color:'+ph2.from+';line-height:1;">Lvl '+pl+'</div><div style="font-size:10px;color:#333;">'+px+' XP</div></div>'+
+          '</div>'+
+          '<div style="height:4px;background:#1C1C26;border-radius:10px;margin-bottom:12px;">'+
+            '<div style="height:100%;width:'+pp+'%;background:linear-gradient(90deg,'+ph2.from+','+ph2.to+');border-radius:10px;"></div>'+
+          '</div>'+
+          '<div style="display:flex;gap:8px;">'+
+            [['🔥',ps,'STREAK',ps>0],['🏆',perfect2,'PERFECT',perfect2>0],['⚡',px,'TOTAL XP',true]].map(function(arr){
+              return '<div style="flex:1;background:#0C0C0F;border-radius:12px;padding:8px 4px;text-align:center;"><div style="font-size:16px;">'+arr[0]+'</div><div style="font-size:12px;font-weight:800;color:'+(arr[3]?ph2.from:'#2A2A3A')+';line-height:1.2;margin-top:2px;">'+arr[1]+'</div><div style="font-size:7px;color:#2A2A3A;letter-spacing:.1em;margin-top:2px;">'+arr[2]+'</div></div>';
+            }).join('')+
+          '</div>'+
+        '</div>';
+    });
+    html+=
+      '<div style="padding:16px;border-radius:16px;background:#13131E;border:1px solid #1E1E2A;">'+
+        '<div style="font-size:12px;font-weight:800;margin-bottom:8px;">📱 Add to Home Screen</div>'+
+        '<div style="font-size:12px;color:#444;line-height:1.8;"><strong style="color:#666;">iPhone Safari:</strong> Tap Share (□↑) → "Add to Home Screen"<br><strong style="color:#666;">Android Chrome:</strong> Tap ⋮ → "Add to Home Screen"</div>'+
+      '</div>';
+    html+='</div>';
+  }
+
+  document.getElementById('content').innerHTML=html;
+}
+
+// ─── ACTIONS ──────────────────────────────────────────────────────────────────
+function switchPhase(i){S.ph=i;S.tab='today';render();}
+function switchTab(t){S.tab=t;render();}
+function switchHistPh(i){S.histPh=i;render();}
+function toggleSkill(k){S.openSkill=S.openSkill===k?null:k;render();}
+
+function toggleTask(i){
+  var p=PHASES[S.ph],td=today();
+  var checked=getObj('c'+S.ph+'_'+td);
+  var was=!!checked[i];
+  checked=Object.assign({},checked);
+  checked[i]=!was;
+  var prevXP=get('x'+S.ph);
+  var newXP=Math.max(0,prevXP+(was?-p.tasks[i].xp:p.tasks[i].xp));
+  var allDone=p.tasks.every(function(_,j){return !!checked[j];});
+  var yd=new Date();yd.setDate(yd.getDate()-1);
+  var yk=yd.toISOString().slice(0,10);
+  var yc=getObj('c'+S.ph+'_'+yk);
+  var yad=p.tasks.every(function(_,j){return !!yc[j];});
+  var streak=get('s'+S.ph);
+  var newStreak=allDone?(yad?streak+1:1):streak;
+
+  var ns=Object.assign({},S.store);
+  ns['c'+S.ph+'_'+td]=checked;
+  ns['x'+S.ph]=newXP;
+  ns['s'+S.ph]=newStreak;
+  S.store=ns;
+  save(ns);
+
+  // Level up check
+  if(!was && Math.floor(newXP/1000)>Math.floor(prevXP/1000)){showLevelUp(p);}
+
+  render();
+}
+
+function showLevelUp(p){
+  var el=document.createElement('div');
+  el.style.cssText='position:fixed;top:50%;left:50%;z-index:9999;background:linear-gradient(135deg,'+p.from+','+p.to+');border-radius:24px;padding:28px 44px;text-align:center;animation:lvlup 2.8s ease forwards;box-shadow:0 0 80px '+p.from+'90;pointer-events:none;';
+  el.innerHTML='<div style="font-size:44px;">⚡</div><div style="font-size:28px;font-weight:800;">LEVEL UP!</div><div style="font-size:14px;opacity:.8;margin-top:4px;">Keep going.</div>';
+  document.body.appendChild(el);
+  setTimeout(function(){el.remove();},2800);
+}
+
+// ─── TIMER ────────────────────────────────────────────────────────────────────
+setInterval(function(){
+  S.ms=msLeft();
+  var el=document.querySelector('[data-timer]');
+  if(el) el.textContent=fmt(S.ms);
+  else render(); // fallback full re-render once per second is fine for static HTML
+},1000);
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
